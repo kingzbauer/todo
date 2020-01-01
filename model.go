@@ -6,35 +6,46 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/go-playground/validator"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-type IDSetter interface {
-	SetID(primitive.ObjectID)
-}
+type (
+	IDSetter interface {
+		SetID(primitive.ObjectID)
+	}
 
-type FilterID interface {
-	FilterID() bson.D
-}
+	FilterID interface {
+		FilterID() bson.D
+	}
 
-type Model struct {
-	DateCreated time.Time `json:"date_created" bson:"date_created"`
-	DateUpdated time.Time `json:"date_updated" bson:"date_updated"`
+	Model struct {
+		DateCreated time.Time `json:"date_created" bson:"date_created"`
+		DateUpdated time.Time `json:"date_updated" bson:"date_updated"`
+	}
+
+	Todo struct {
+		*Model
+		ID         primitive.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
+		Collection string             `model:"todo" bson:"-" json:"-"`
+		Title      string             `json:"title" bson:"title" validate:"required"`
+		Completed  bool               `json:"completed" bson:"completed"`
+	}
+
+	CustomValidator struct {
+		validator *validator.Validate
+	}
+)
+
+func (c *CustomValidator) Validate(i interface{}) error {
+	return c.validator.Struct(i)
 }
 
 func (m *Todo) SetID(id primitive.ObjectID) {
 	m.ID = id
-}
-
-type Todo struct {
-	*Model
-	ID         primitive.ObjectID `json:"_id" bson:"_id"`
-	Collection string             `model:"todo" bson:"-"`
-	Title      string             `json:"title" bson:"title"`
-	Completed  bool               `json:"completed" bson:"completed"`
 }
 
 func (t *Todo) FilterID() bson.D {
@@ -116,6 +127,10 @@ func UpdateCreateDates(model interface{}) {
 	modelField := valueOf.FieldByName("Model")
 	if !modelField.IsValid() {
 		return
+	}
+
+	if modelField.IsNil() {
+		modelField.Set(reflect.New(reflect.TypeOf(Model{})))
 	}
 
 	// Model should be a struct
@@ -204,4 +219,26 @@ func Delete(model FilterID) error {
 
 	_, err = collection.DeleteOne(context.TODO(), model.FilterID())
 	return err
+}
+
+func Retrieve(filter bson.D, typ interface{}) (interface{}, error) {
+	typeOf := reflect.TypeOf(typ)
+	if typeOf.Kind() != reflect.Struct {
+		log.Panic("Requires a struct")
+	}
+
+	col, err := GetCollection(typ)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	result := col.FindOne(context.TODO(), filter)
+	if result.Err() != nil {
+		return nil, result.Err()
+	}
+
+	value := reflect.New(typeOf).Interface()
+	result.Decode(value)
+
+	return value, nil
 }
