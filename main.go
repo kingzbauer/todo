@@ -1,9 +1,11 @@
 package main
 
+import (
+	"fmt"
+)
+
 func main() {
-	todo := Todo{Title: "Test todo"}
-	_, err := InsertOne(todo)
-	if err != nil {
-		panic(err)
+	for _, todo := range List() {
+		fmt.Println(todo.Title, todo.DateCreated, todo.ID)
 	}
 }

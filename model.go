@@ -6,8 +6,10 @@ import (
 	"reflect"
 	"time"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type IDSetter interface {
@@ -15,20 +17,20 @@ type IDSetter interface {
 }
 
 type Model struct {
-	ID          primitive.ObjectID `json:"_id"`
-	DateCreated time.Time          `json:"date_created" bson:"date_created"`
-	DateUpdated time.Time          `json:"date_updated" bson:"date_updated"`
+	DateCreated time.Time `json:"date_created" bson:"date_created"`
+	DateUpdated time.Time `json:"date_updated" bson:"date_updated"`
 }
 
-func (m *Model) SetID(id primitive.ObjectID) {
+func (m *Todo) SetID(id primitive.ObjectID) {
 	m.ID = id
 }
 
 type Todo struct {
-	Model
-	Collection string `model:"todo"`
-	Title      string `json:"title" bson:"title"`
-	Completed  bool   `json:"completed" bson:"completed"`
+	*Model
+	ID         primitive.ObjectID `json:"_id" bson:"_id"`
+	Collection string             `model:"todo" bson:"-"`
+	Title      string             `json:"title" bson:"title"`
+	Completed  bool               `json:"completed" bson:"completed"`
 }
 
 func GetCollectionName(model interface{}, panicIfMissing bool) string {
@@ -77,10 +79,7 @@ func InsertOne(model interface{}) (interface{}, error) {
 	}
 
 	// update the date created and updated fields if it's of type model
-	if model, ok := model.(*Model); ok {
-		model.DateCreated = time.Now()
-		model.DateUpdated = time.Now()
-	}
+	UpdateCreateDates(model)
 
 	result, err := collection.InsertOne(context.TODO(), model)
 	if err != nil {
@@ -92,4 +91,73 @@ func InsertOne(model interface{}) (interface{}, error) {
 	}
 
 	return model, nil
+}
+
+func UpdateCreateDates(model interface{}) {
+	valueOf := reflect.ValueOf(model)
+
+	if !isStruct(model) {
+		return
+	}
+
+	if valueOf.Kind() == reflect.Ptr {
+		valueOf = valueOf.Elem()
+	}
+
+	// check if Model is part the instance definition
+	modelField := valueOf.FieldByName("Model")
+	if !modelField.IsValid() {
+		return
+	}
+
+	// Model should be a struct
+	modelValue := modelField.Interface()
+	if !isStruct(modelValue) {
+		return
+	}
+
+	concreteValue, ok := modelValue.(*Model)
+	if !ok {
+		return
+	}
+
+	concreteValue.DateCreated = time.Now()
+	concreteValue.DateUpdated = time.Now()
+}
+
+func isStruct(value interface{}) bool {
+	typeOf := reflect.TypeOf(value)
+
+	switch typeOf.Kind() {
+	case reflect.Struct:
+		return true
+	case reflect.Ptr:
+		if typeOf.Elem().Kind() == reflect.Struct {
+			return true
+		}
+	default:
+		return false
+	}
+
+	return false
+}
+
+func List() []*Todo {
+	todos := make([]*Todo, 0)
+	collection, err := GetCollection(Todo{})
+
+	if err != nil {
+		log.Panic(err)
+	}
+
+	find := options.Find().SetShowRecordID(true)
+	cursor, err := collection.Find(
+		context.TODO(), bson.D{}, find)
+	if err != nil {
+		log.Panic(err)
+	}
+
+	cursor.All(context.TODO(), &todos)
+
+	return todos
 }
