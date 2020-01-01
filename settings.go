@@ -16,7 +16,7 @@ func FromEnvironment() *Settings {
 		return settings
 	}
 
-	s = &Settings{}
+	s := &Settings{}
 
 	s.DBURI = os.Getenv("DB_URI")
 	s.DBName = os.Getenv("DB_NAME")

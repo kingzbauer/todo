@@ -4,3 +4,7 @@
 
 # ignore emacs flycheck_* type of files
 flycheck_*
+flymake_*
+
+# ignore the executable
+todo

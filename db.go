@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"time"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -16,16 +17,17 @@ func GetDatabase() (*mongo.Database, error) {
 	settings := FromEnvironment()
 	var err error
 
-	defaultClient, err = mongo.Connect(context.TODO(), options.Client().ApplyURI(settings.DBURI))
+	ctx, _ := context.WithDeadline(context.TODO(), time.Now().Add(time.Second*5))
+	defaultClient, err = mongo.Connect(ctx, options.Client().ApplyURI(settings.DBURI))
 	if err != nil {
 		return nil, err
 	}
 
-	if err := defaultClient.Ping(context.TODO()); err != nil {
+	if err := defaultClient.Ping(ctx, nil); err != nil {
 		return nil, err
 	}
 
-	return defaultClient(settings.DBName), nil
+	return defaultClient.Database(settings.DBName), nil
 }
 
 func CloseDefaultClient() error {
