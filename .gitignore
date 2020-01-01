@@ -1,0 +1,6 @@
+*~
+\#*
+*.swp
+
+# ignore emacs flycheck_* type of files
+flycheck_*
