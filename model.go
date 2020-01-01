@@ -16,6 +16,10 @@ type IDSetter interface {
 	SetID(primitive.ObjectID)
 }
 
+type FilterID interface {
+	FilterID() bson.D
+}
+
 type Model struct {
 	DateCreated time.Time `json:"date_created" bson:"date_created"`
 	DateUpdated time.Time `json:"date_updated" bson:"date_updated"`
@@ -31,6 +35,10 @@ type Todo struct {
 	Collection string             `model:"todo" bson:"-"`
 	Title      string             `json:"title" bson:"title"`
 	Completed  bool               `json:"completed" bson:"completed"`
+}
+
+func (t *Todo) FilterID() bson.D {
+	return bson.D{{"_id", t.ID}}
 }
 
 func GetCollectionName(model interface{}, panicIfMissing bool) string {
@@ -160,4 +168,40 @@ func List() []*Todo {
 	cursor.All(context.TODO(), &todos)
 
 	return todos
+}
+
+func GetID(model interface{}) primitive.ObjectID {
+	if !isStruct(model) {
+		log.Fatal("Requires a struct")
+	}
+
+	valueOf := reflect.ValueOf(model)
+	if valueOf.Kind() == reflect.Ptr {
+		valueOf = valueOf.Elem()
+	}
+
+	idField := valueOf.FieldByName("ID")
+
+	return idField.Interface().(primitive.ObjectID)
+}
+
+func Update(model *Todo) error {
+	collection, err := GetCollection(model)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	update := bson.D{{"$set", bson.D{{"title", model.Title}, {"completed", model.Completed}}}}
+	_, err = collection.UpdateOne(context.TODO(), model.FilterID(), update)
+	return err
+}
+
+func Delete(model FilterID) error {
+	collection, err := GetCollection(model)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	_, err = collection.DeleteOne(context.TODO(), model.FilterID())
+	return err
 }
