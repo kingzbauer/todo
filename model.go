@@ -144,8 +144,10 @@ func UpdateCreateDates(model interface{}) {
 		return
 	}
 
-	concreteValue.DateCreated = time.Now()
-	concreteValue.DateUpdated = time.Now()
+	location, _ := time.LoadLocation("Africa/Nairobi")
+
+	concreteValue.DateCreated = time.Now().In(location)
+	concreteValue.DateUpdated = time.Now().In(location)
 }
 
 func isStruct(value interface{}) bool {
