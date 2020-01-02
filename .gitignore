@@ -11,3 +11,6 @@ todo
 
 # ignore bak files
 *.bak
+
+# .env
+.env*
