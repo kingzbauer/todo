@@ -11,5 +11,5 @@ services:
     ports:
       - "80:8000"
   mongo:
-    image: mongo:4.0.14-xenialb
+    image: mongo:4.0.14-xenial
     

@@ -15,7 +15,7 @@ FROM scratch
 
 MAINTAINER Jack Kinga <jackmwangi@gmail.com>
 
-WORKDIR /home/bin
+WORKDIR /usr/bin
 COPY --from=builder /home/app/app ./app
 
 EXPOSE 8000
