@@ -8,3 +8,6 @@ flymake_*
 
 # ignore the executable
 todo
+
+# ignore bak files
+*.bak
