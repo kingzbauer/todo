@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-playground/validator"
 	"github.com/labstack/echo"
+	"github.com/labstack/echo/middleware"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -80,6 +81,9 @@ func deleteTodo(c echo.Context) error {
 
 func start(port int) {
 	e := echo.New()
+
+	e.Use(middleware.CORS())
+
 	e.Validator = &CustomValidator{validator: validator.New()}
 	e.GET("/api/v1/todos/", list)
 	e.POST("/api/v1/todos/", create)

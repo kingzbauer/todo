@@ -10,6 +10,8 @@ services:
       DB_NAME: todos
     ports:
       - "80:8000"
+    depends_on:
+      - mongo
   mongo:
     image: mongo:4.0.14-xenial
     
