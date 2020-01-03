@@ -4,3 +4,6 @@
 
 # git folder
 .git/
+
+docker-compose.yaml
+.gitignore
