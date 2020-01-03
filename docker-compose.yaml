@@ -16,7 +16,7 @@ services:
     image: liberty254/todo-nextjs:${IMG_TAG_UI:?err}
     build:
       context: todo-react/
-      dockerfile: todo-react/Dockerfile
+      dockerfile: Dockerfile
     environment:
       API_HOST: 'app:8000'
     ports:
