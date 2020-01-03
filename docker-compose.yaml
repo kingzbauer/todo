@@ -9,9 +9,20 @@ services:
       DB_URI: mongodb://mongo:27017
       DB_NAME: todos
     ports:
-      - "80:8000"
+      - "8000:8000"
     depends_on:
       - mongo
+  frontend:
+    image: liberty254/todo-nextjs:${IMG_TAG_UI:?err}
+    build:
+      context: todo-react/
+      dockerfile: todo-react/Dockerfile
+    environment:
+      API_HOST: 'app:8000'
+    ports:
+      - "80:3000"
+    depends_on:
+      - app
   mongo:
     image: mongo:4.0.14-xenial
     

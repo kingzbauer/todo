@@ -8,10 +8,16 @@ set_image_tag() {
     # create .env file if it doesn't exist already
     ENV_FILE=.env
     ENV_NAME=IMG_TAG
+
+    if test $SUBMODULE; then
+	ENV_FILE=../.env
+	ENV_NAME=IMG_TAG_UI
+    fi
+    
     ! test -f $ENV_FILE && touch $ENV_FILE
-    grep -q "^$ENV_NAME=" .env \
-	&& sed  -i .bak 's@\(IMG_TAG=\)\(.*\)@\1'"$(git_tag)"'@g' \
-		.env || echo "IMG_TAG=$(git_tag)" >> .env
+    grep -q "^$ENV_NAME=" $ENV_FILE \
+	&& sed  -i .bak "s@\($ENV_NAME=\)\(.*\)@\1""$(git_tag)"'@g' \
+		$ENV_FILE || echo "$ENV_NAME=$(git_tag)" >> $ENV_FILE
 }
 
 POSITIONAL=()
